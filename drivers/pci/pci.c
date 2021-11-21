@@ -1163,6 +1163,11 @@ static int pci_raw_set_power_state(struct pci_dev *dev, pci_power_t state)
  */
 void pci_update_current_state(struct pci_dev *dev, pci_power_t state)
 {
+	pci_power_t plat_state = platform_pci_get_power_state(dev);
+
+	pci_info(dev, "pci_update_current_state() plat_state = %s",
+		pci_power_name(plat_state));
+
 	if (platform_pci_get_power_state(dev) == PCI_D3cold ||
 	    !pci_device_is_present(dev)) {
 		dev->current_state = PCI_D3cold;
@@ -1216,6 +1221,8 @@ EXPORT_SYMBOL_GPL(pci_platform_power_transition);
 
 static int pci_resume_one(struct pci_dev *pci_dev, void *ign)
 {
+	pci_info(pci_dev, "pci_resume_one() (current state = %s)",
+		pci_power_name(pci_dev->current_state));
 	pm_request_resume(&pci_dev->dev);
 	return 0;
 }
@@ -1290,6 +1297,7 @@ int pci_power_up(struct pci_dev *dev)
 		 * may be powered on into D0uninitialized state, resume them to
 		 * give them a chance to suspend again
 		 */
+		pci_info(dev, "pci_power_up() will resume this bus.");
 		pci_resume_bus(dev->subordinate);
 	}
 
@@ -1357,6 +1365,9 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
 		return 0;
 
 	/* Check if we're already there */
+	pci_info(dev, "pci_set_power_state %s -> %s",
+		pci_power_name(dev->current_state),
+		pci_power_name(state));
 	if (dev->current_state == state)
 		return 0;
 

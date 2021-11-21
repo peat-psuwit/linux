@@ -525,6 +525,10 @@ static int pci_restore_standard_config(struct pci_dev *pci_dev)
 {
 	pci_update_current_state(pci_dev, PCI_UNKNOWN);
 
+	pci_info(pci_dev, "pci_restore_standard_config() "
+			"pci_update_current_state retrives %s",
+			pci_power_name(pci_dev->current_state));
+
 	if (pci_dev->current_state != PCI_D0) {
 		int error = pci_set_power_state(pci_dev, PCI_D0);
 		if (error)
@@ -949,6 +953,9 @@ static int pci_pm_resume(struct device *dev)
 	struct pci_dev *pci_dev = to_pci_dev(dev);
 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
 
+	pci_info(pci_dev, "pci_pm_resume() #0 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
+
 	/*
 	 * This is necessary for the suspend error path in which resume is
 	 * called without restoring the standard config registers of the device.
@@ -956,10 +963,16 @@ static int pci_pm_resume(struct device *dev)
 	if (pci_dev->state_saved)
 		pci_restore_standard_config(pci_dev);
 
+	pci_info(pci_dev, "pci_pm_resume() #1 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
+
 	if (pci_has_legacy_pm_support(pci_dev))
 		return pci_legacy_resume(dev);
 
 	pci_pm_default_resume(pci_dev);
+
+	pci_info(pci_dev, "pci_pm_resume() #2 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
 
 	if (pm) {
 		if (pm->resume)
@@ -967,6 +980,9 @@ static int pci_pm_resume(struct device *dev)
 	} else {
 		pci_pm_reenable_device(pci_dev);
 	}
+
+	pci_info(pci_dev, "pci_pm_resume() #3 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
 
 	return 0;
 }
@@ -1298,6 +1314,9 @@ static int pci_pm_runtime_resume(struct device *dev)
 	pci_power_t prev_state = pci_dev->current_state;
 	int error = 0;
 
+	pci_info(pci_dev, "pci_pm_runtime_resume() #0 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
+
 	/*
 	 * Restoring config space is necessary even if the device is not bound
 	 * to a driver because although we left it in D0, it may have gone to
@@ -1305,17 +1324,30 @@ static int pci_pm_runtime_resume(struct device *dev)
 	 */
 	pci_restore_standard_config(pci_dev);
 
+	pci_info(pci_dev, "pci_pm_runtime_resume() #1 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
+
 	if (!pci_dev->driver)
 		return 0;
 
 	pci_fixup_device(pci_fixup_resume_early, pci_dev);
+	pci_info(pci_dev, "pci_pm_runtime_resume() #2 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
 	pci_pm_default_resume(pci_dev);
+	pci_info(pci_dev, "pci_pm_runtime_resume() #3 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
 
 	if (prev_state == PCI_D3cold)
 		pci_bridge_wait_for_secondary_bus(pci_dev);
 
+	pci_info(pci_dev, "pci_pm_runtime_resume() #4 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
+
 	if (pm && pm->runtime_resume)
 		error = pm->runtime_resume(dev);
+
+	pci_info(pci_dev, "pci_pm_runtime_resume() #5 (current state = %s)",
+		pci_power_name(pci_dev->current_state));
 
 	pci_dev->runtime_d3cold = false;
 
